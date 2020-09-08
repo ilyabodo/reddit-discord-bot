@@ -3,10 +3,18 @@ from discord.ext import commands
 import praw
 from dotenv import load_dotenv
 import os
+import requests
+import time
 load_dotenv()
 
 
 client = commands.Bot(command_prefix = '.')
+
+class Item:
+	def __init__(self, title='', body='', ids=''):
+		self.title = title
+		self.body = body
+		self.id = ids
 
 @client.event
 async def on_ready():
@@ -48,5 +56,32 @@ async def new(ctx, subreddit, l='5'):
 		await ctx.send(embed=e)	
 	except:
 		await ctx.send("Either that subreddit doesn't exist, the number of posts is too high, or you formated the command wrong!")		
+
+@client.command()
+async def lookfor(ctx, subreddit, *, items):
+
+	keywords = items.split(',')
+	print(items, keywords)
+	items_list = list() # List to hold all the Items
+	id_list = list()
+	for x in range (10):
+		for submission in reddit.subreddit(subreddit).new(limit=5):
+			# More attributes/properties of each post can be gathered here
+			entree = Item(submission.title, submission.selftext, submission.id)
+			# Adds and prints any posts that havent already been recorded
+			if submission.id not in id_list:
+				items_list.append(entree)
+				id_list.append(submission.id)
+				# Searches each post for each of the keywords
+				for word in keywords:
+					if (word.lower() in entree.title.lower() 
+							or word.lower() in entree.body.lower()):
+						e = discord.Embed(
+							title = (f'{submission.title}'),
+							url = (f'{submission.url}')
+							)
+
+						await ctx.send("Your keyword: '" + word + "' was found", embed=e)
+		time.sleep(5)
 
 client.run(os.getenv('DISCORD_API_KEY'))

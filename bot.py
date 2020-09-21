@@ -1,12 +1,15 @@
 import discord
 from discord.ext import commands
+from discord.ext import tasks
 import praw
 from dotenv import load_dotenv
 import os
+import contextlib
 import requests
 import time
 import asyncio
 import json
+import secrets
 load_dotenv()
 
 
@@ -28,7 +31,69 @@ async def on_ready():
 	global data
 	with open('data.json', 'r') as file:
 		data = json.load(file)
+
+	global sear
+	sear = {}
+	global post_ids
+	post_ids = {}
+	test.start()
 	print("READY")
+
+@client.command()
+async def new_search(ctx, subreddit: str = 'discordapp', *, items):
+	new_search_id = abs(hash(str(subreddit) + str(items) + str(ctx.message.author.id)))
+	if new_search_id in post_ids:
+		await ctx.send('This search is already running.')
+		return
+	sear[new_search_id] = []
+	sear[new_search_id].append({'ctx': ctx,'subreddit': str(subreddit), 'terms': str(items), 'user': str(ctx.message.author.id)})
+	post_ids[new_search_id] = []
+	print(sear)
+	print(post_ids)
+
+@client.command()
+async def removesearch(ctx, subreddit: str = 'discordapp', *, items):
+	try
+		id = abs(hash(str(subreddit) + str(items) + str(ctx.message.author.id)))
+		print(id)
+		sear.pop(id)
+		post_ids.pop(id)
+		await ctx.send(f'Search has been removed.')
+	except
+		await ctx.send('No search found with those parameters.')
+
+@client.command()
+async def mysearch(ctx):
+	temp = []
+	for x in sear:
+		if sear[x][0]['user'] == str(ctx.message.author.id):
+			temp.append([sear[x][0]['subreddit'], sear[x][0]['terms']])
+	await ctx.send(temp)		
+
+async def all_searches():
+	for search in sear:
+		keywords = sear[search][0]['terms'].split(',')
+		for submission in reddit.subreddit(sear[search][0]['subreddit']).new(limit=5):
+			if submission.id not in post_ids[search]:
+
+				post_ids[search].append(submission.id)
+				# Searches each post for each of the keywords
+				for word in keywords:
+					if (word.lower() in submission.title.lower() 
+							or word.lower() in submission.selftext.lower()):
+						e = discord.Embed(
+							title = (f'{submission.title[:256]}'),
+							url = (f'{submission.url}')
+							)
+						if data[sear[search][0]['user']][0]['mention'] == 'true':
+							await sear[search][0]['ctx'].send("{} Keyword: '".format(sear[search][0]['ctx'].author.mention) + word + "' was found", embed=e)
+						else:
+							await sear[search][0]['ctx'].send("Keyword: '" + word + "' was found", embed=e)
+
+@tasks.loop(seconds=10)
+async def test():
+	await all_searches()
+
 
 @client.command()
 async def hello(ctx):
@@ -41,6 +106,7 @@ async def hello(ctx):
 async def init_user(user_id):
 	data[user_id] = []
 	data[user_id].append({'mention': 'false'})
+	data[user_id].append({'orsearch': ''})
 	print(data)
 	await save_json()
 
@@ -57,13 +123,11 @@ async def mention(ctx, mention):
 		return
 	else:
 		data[user_id][0]['mention'] = m
+		save_json()
 		print (data)
 		temp = ' NOT' if m == 'false' else ''
 		await ctx.send(f'Reddit Bot will{temp} @ mention you about found items.')
 
-@client.command()
-async def test(ctx):
-	await ctx.send('testing compelte')
 
 @client.command()
 async def hot(ctx, subreddit, l='5'):
@@ -92,37 +156,6 @@ async def new(ctx, subreddit, l='5'):
 		await ctx.send(embed=e)	
 	except:
 		await ctx.send("Either that subreddit doesn't exist, the number of posts is too high, or you formated the command wrong!")		
-
-@client.command()
-async def lookfor(ctx, length: int = 3, subreddit: str = 'discordapp', *, items):
-
-	keywords = items.split(',')
-	items_list = list() # List to hold all the Items
-	id_list = list()
-	user_id = str(ctx.message.author.id)
-	for x in range (10):
-		for submission in reddit.subreddit(subreddit).new(limit=5):
-			# More attributes/properties of each post can be gathered here
-			entree = Item(submission.title, submission.selftext, submission.id)
-			# Adds and prints any posts that havent already been recorded
-			if submission.id not in id_list:
-				items_list.append(entree)
-				id_list.append(submission.id)
-				# Searches each post for each of the keywords
-				for word in keywords:
-					if (word.lower() in entree.title.lower() 
-							or word.lower() in entree.body.lower()):
-						e = discord.Embed(
-							title = (f'{submission.title}'),
-							url = (f'{submission.url}')
-							)
-						if data[user_id][0]['mention'] == 'true':
-							await ctx.send("{} Keyword: '".format(ctx.author.mention) + word + "' was found", embed=e)
-						else:
-							await ctx.send("Keyword: '" + word + "' was found", embed=e)
-		await asyncio.sleep(10)
-	await ctx.send(f'Search for {items} in {subreddit} has ended.')	
-
 
 async def save_json():
 		with open('data.json', 'w') as outfile:

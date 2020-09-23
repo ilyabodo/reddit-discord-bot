@@ -65,7 +65,7 @@ class User(commands.Cog):
 		temp = []
 		user_id = str(ctx.message.author.id)
 		for x in self.user_searches[user_id]:
-			temp.append([self.sear[x][0]['terms'], self.sear[x][0]['terms']])
+			temp.append([self.sear[x][0]['subreddit'], self.sear[x][0]['terms']])
 		await ctx.send(temp)
 
 	async def all_searches(self):
@@ -104,6 +104,7 @@ class User(commands.Cog):
 	async def init_user(self, user_id):
 		self.data[user_id] = []
 		self.data[user_id].append({'mention': 'false'})
+		self.user_searches[user] = []
 		await self.save_json(self.data, 'data.json')
 
 	@commands.command()

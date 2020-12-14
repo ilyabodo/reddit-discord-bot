@@ -1,4 +1,5 @@
 # reddit-discord-bot
+Current version: v1.0  
 
 This is a Discord Bot that allows users to be notified on discord when certain terms appear in new posts on a subreddit. It also allows basic queries of subreddits to get hot/top/newest posts.
 

@@ -179,7 +179,7 @@ class User(commands.Cog):
 					self.post_ids[search.hash].append(submission.id) # Add post_id to list
 					# Keeps the post_ids list limited to 2*search_limit_int size
 					if len(self.post_ids[search.hash]) > 2*self.search_limit_int:
-						self.post_ids[searc.hash].pop(0) # Removes oldest
+						self.post_ids[search.hash].pop(0) # Removes oldest
 
 					# Format the title and body strings
 					title = submission.title.lower()
@@ -235,9 +235,12 @@ class User(commands.Cog):
 			return False
 			
 	# Main loop that calls all seaches function
-	@tasks.loop(seconds=10)
+	@tasks.loop(seconds=20)
 	async def loop(self):
-		await self.all_searches()
+		try:
+			await self.all_searches()
+		except:
+			pass	
 
 	# Helper function that saves the current data dictionary state to a pickle file
 	async def save_pickle(self):

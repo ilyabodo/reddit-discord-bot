@@ -1,45 +1,161 @@
 import discord
 from discord.ext import commands, tasks
 import praw
-from dotenv import load_dotenv
-import os
 import pickle
-load_dotenv()
-
-"""
-This is a data container class for a search item
-"""
-class Search_item:
-	def __init__(self, mention, subreddit, items, author_id, channel_id):
-		self.mention = mention
-		self.subreddit = subreddit
-		self.items = items
-		self.author_id = author_id
-		self.channel_id = channel_id
-		#the hash is used as a unique identifier for each search
-		self.hash = self.my_hash(subreddit, items, author_id, channel_id)
-
-	def my_hash(self, subreddit, items, author_id, channel_id):
-		return abs(hash(str(subreddit) + str(items) + str(author_id) + str(channel_id)))
+import os
+import sys
+sys.path.append("../")
+import api_keys
 
 
-class User(commands.Cog):
+class RedditBasic(commands.Cog):
 
-	def __init__(self, client, reddit, data, post_ids):
+	def __init__(self, client, reddit):
 		self.client = client
 		self.reddit = reddit
-		self.data = data
-		self.post_ids = post_ids
+
+	@commands.Cog.listener()
+	async def on_ready(self):
+		print('Basic commands loaded')
+
+	@commands.command()
+	async def hot(self, ctx, subreddit='discordapp', l='5'):
+		try:
+			submissions = self.reddit.subreddit(subreddit).hot(limit=int(l))
+		except:
+			await ctx.send("Either that subreddit doesn't exist, the number of posts is too high, or you formated the command wrong!")
+			return
+
+		e = discord.Embed(
+			title = f'Hottest submissions to r/{subreddit}',
+			url = 'https://reddit.com/r/' + subreddit
+			)
+		for i, x in enumerate(submissions):
+			e.add_field(name=f'{i+1}. {x.title}', value = x.url, inline = False)
+		await ctx.send(embed=e)	
+		
+	@commands.command()
+	async def new(self, ctx, subreddit='discordapp', l='5'):
+		try:
+			submissions = self.reddit.subreddit(subreddit).new(limit=int(l))
+			e = discord.Embed(
+				title = f'Newest submissions to r/{subreddit}',
+				url = 'https://reddit.com/r/' + subreddit
+				)
+			for i, x in enumerate(submissions):
+				e.add_field(name=f'{i+1}. {x.title}', value = x.url, inline = False)
+			await ctx.send(embed=e)	
+		except:
+			await ctx.send("Either that subreddit doesn't exist, the number of posts is too high, or you formated the command wrong!")
+
+	@commands.command(aliases=['all', 'top_all'])
+	async def topall(self, ctx, subreddit='discordapp'):
+		try:
+			submissions = self.reddit.subreddit(subreddit).top("all", limit=10)
+			e = discord.Embed(
+				title = 'Top posts of all time on r/' + subreddit,
+				url = 'https://reddit.com/r/' + subreddit + '/top/?t=all'
+				)
+			for i, x in enumerate(submissions):
+				e.add_field(name=f'{i+1}. {x.title}', value = x.url, inline = False)
+			await ctx.send(embed=e)	
+		except:
+			await ctx.send("Either that subreddit doesn't exist, the number of posts is too high, or you formated the command wrong!")
+
+	@commands.command(aliases=['year', 'top_year'])
+	async def topyear(self, ctx, subreddit='discordapp'):
+		try:
+			submissions = self.reddit.subreddit(subreddit).top("year", limit=10)
+			e = discord.Embed(
+				title = 'Top posts of the year on r/' + subreddit,
+				url = 'https://reddit.com/r/' + subreddit + '/top/?t=year'
+				)
+			for i, x in enumerate(submissions):
+				e.add_field(name=f'{i+1}. {x.title}', value = x.url, inline = False)
+			await ctx.send(embed=e)	
+		except:
+			await ctx.send("Either that subreddit doesn't exist, the number of posts is too high, or you formated the command wrong!")
+
+	@commands.command(aliases=['month', 'top_month'])		
+	async def topmonth(self, ctx, subreddit='discordapp'):
+		try:
+			submissions = self.reddit.subreddit(subreddit).top("month", limit=10)
+			e = discord.Embed(
+				title = 'Top posts of the month on r/' + subreddit,
+				url = 'https://reddit.com/r/' + subreddit + '/top/?t=month'
+				)
+			for i, x in enumerate(submissions):
+				e.add_field(name=f'{i+1}. {x.title}', value = x.url, inline = False)
+			await ctx.send(embed=e)	
+		except:
+			await ctx.send("Either that subreddit doesn't exist, the number of posts is too high, or you formated the command wrong!")			
+
+	@commands.command(aliases=['week', 'top_week'])
+	async def topweek(self, ctx, subreddit='discordapp'):
+		try:
+			submissions = self.reddit.subreddit(subreddit).top("week", limit=10)
+			e = discord.Embed(
+				title = 'Top posts of the week on r/' + subreddit,
+				url = 'https://reddit.com/r/' + subreddit + '/top/?t=week'
+				)
+			for i, x in enumerate(submissions):
+				e.add_field(name=f'{i+1}. {x.title}', value = x.url, inline = False)
+			await ctx.send(embed=e)	
+		except:
+			await ctx.send("Either that subreddit doesn't exist, the number of posts is too high, or you formated the command wrong!")	
+
+	@commands.command(aliases=['day', 'top_day', 'top', 'today'])
+	async def topday(self, ctx, subreddit='discordapp'):
+		try:
+			submissions = self.reddit.subreddit(subreddit).top("day", limit=10)
+			e = discord.Embed(
+				title = 'Top posts of the day on r/' + subreddit,
+				url = 'https://reddit.com/r/' + subreddit + '/top/?t=day'
+				)
+			for i, x in enumerate(submissions):
+				e.add_field(name=f'{i+1}. {x.title}', value = x.url, inline = False)
+			await ctx.send(embed=e)	
+		except:
+			await ctx.send("Either that subreddit doesn't exist, the number of posts is too high, or you formated the command wrong!")	
+
+	@commands.command(aliases=['hour', 'top_hour', 'now'])
+	async def tophour(self, ctx, subreddit='discordapp'):
+		try:
+			submissions = self.reddit.subreddit(subreddit).top("hour", limit=10)
+			e = discord.Embed(
+				title = 'Top posts of the hour on r/' + subreddit,
+				url = 'https://reddit.com/r/' + subreddit + '/top/?t=hour'
+				)
+			for i, x in enumerate(submissions):
+				e.add_field(name=f'{i+1}. {x.title}', value = x.url, inline = False)
+			await ctx.send(embed=e)
+		except:
+			await ctx.send("Either that subreddit doesn't exist, the number of posts is too high, or you formated the command wrong!")	
+
+
+class RedditUser(commands.Cog):
+
+	def __init__(self, client, reddit):
+		self.client = client
+		self.reddit = reddit
+
+		self.post_ids = {}
+
+		with open('data.pkl', 'rb') as input:
+			self.data = pickle.load(input)
+		for user in self.data:
+			for search in self.data[user]["searches"]:
+				self.post_ids[search.hash] = []
+
 		self.search_limit_int = 5
 		
-
 
 	@commands.Cog.listener()
 	async def on_ready(self):
 		
 		# Waits for bot to cache all data
 		await self.client.wait_until_ready()
-		self.loop.start()  
+		self.loop.start()
 		print('User commands loaded')
 
 	"""
@@ -240,23 +356,32 @@ class User(commands.Cog):
 		try:
 			await self.all_searches()
 		except:
-			pass	
+			print("LOOP ERROR OCCURED, IGNORING.....")
 
 	# Helper function that saves the current data dictionary state to a pickle file
 	async def save_pickle(self):
 		with open('data.pkl', 'wb') as outfile:
 			pickle.dump(self.data, outfile)
 
+	"""
+	This is a data container class for a search item
+	"""
+	class Search_item:
+		def __init__(self, mention, subreddit, items, author_id, channel_id):
+			self.mention = mention
+			self.subreddit = subreddit
+			self.items = items
+			self.author_id = author_id
+			self.channel_id = channel_id
+			#the hash is used as a unique identifier for each search
+			self.hash = self.my_hash(subreddit, items, author_id, channel_id)
+
+		def my_hash(self, subreddit, items, author_id, channel_id):
+			return abs(hash(str(subreddit) + str(items) + str(author_id) + str(channel_id)))
 
 def setup(client):
-	reddit = praw.Reddit(client_id=os.getenv('REDDIT_CLIENT_ID'),
-				client_secret=os.getenv('REDDIT_CLIENT_SECRET'),
-				user_agent="my user agent")
-	post_ids = {}
-	# Read pickle file as dictionary
-	with open('data.pkl', 'rb') as input:
-		data = pickle.load(input)
-	for user in data:
-		for search in data[user]["searches"]:
-			post_ids[search.hash] = []
-	client.add_cog(User(client, reddit, data, post_ids))
+	reddit = praw.Reddit(client_id=api_keys.REDDIT_CLIENT_ID,
+					client_secret=api_keys.REDDIT_CLIENT_SECRET,
+					user_agent="my user agent")
+	client.add_cog(RedditBasic(client, reddit))
+	client.add_cog(RedditUser(client, reddit))
